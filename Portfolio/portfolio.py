@@ -72,9 +72,10 @@ class Portfolio:
         
         if quantity > 0:
             cost = quantity * price
+            total_cost = cost + fill.commission
             
             # Cannot afford
-            if cost > self.cash:
+            if total_cost > self.cash:
                 raise ValueError('Insufficient cash')
             
             if current_position == 0:
@@ -85,8 +86,7 @@ class Portfolio:
                 
                 new_average_price = (old_cost + new_cost) / (current_position + quantity)
                 
-            self.cash -= cost
-            self.cash -= fill.commission
+            self.cash -= total_cost
             self.positions[symbol] = current_position + quantity
             self.average_entry_price[symbol] = new_average_price
             
