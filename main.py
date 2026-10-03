@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+
 from Data.data_handler import DataHandler
 from Engine.backtest import BacktestEngine
 from Strategy.strategy import MovingAverageStrategy
 
 # Load Market Data
-data_handler = DataHandler('Backtest Engine/AAPL.csv')
+data_handler = DataHandler('AAPL.csv')
 
 # Define Strategy
 strategy = MovingAverageStrategy(short_window=30, long_window=50)
