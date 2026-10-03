@@ -1,4 +1,6 @@
+import pandas as pd
 import pytest
+
 from Execution.fill import Fill
 
 
@@ -7,13 +9,15 @@ def test_valid_buy_fill():
         symbol="AAPL",
         quantity=100,
         side="BUY",
-        price=150
+        price=150,
+        timestamp="2026-01-05"
     )
 
     assert fill.symbol == "AAPL"
     assert fill.quantity == 100
     assert fill.side == "BUY"
     assert fill.price == 150.0
+    assert fill.timestamp == pd.Timestamp('2026-01-05')
 
 
 def test_valid_sell_fill():
@@ -21,7 +25,8 @@ def test_valid_sell_fill():
         symbol="AAPL",
         quantity=100,
         side="SELL",
-        price=150
+        price=150,
+        timestamp="2026-01-05"
     )
 
     assert fill.side == "SELL"
@@ -32,7 +37,8 @@ def test_side_is_converted_to_uppercase():
         symbol="AAPL",
         quantity=100,
         side="buy",
-        price=150
+        price=150,
+        timestamp="2026-01-05"
     )
 
     assert fill.side == "BUY"
@@ -44,7 +50,8 @@ def test_symbol_must_be_string():
             symbol=123,
             quantity=100,
             side="BUY",
-            price=150
+            price=150,
+            timestamp="2026-01-05"
         )
 
 
@@ -54,7 +61,8 @@ def test_symbol_cannot_be_empty():
             symbol="",
             quantity=100,
             side="BUY",
-            price=150
+            price=150,
+            timestamp="2026-01-05"
         )
 
 
@@ -64,7 +72,8 @@ def test_quantity_must_be_integer():
             symbol="AAPL",
             quantity=100.5,
             side="BUY",
-            price=150
+            price=150,
+            timestamp="2026-01-05"
         )
 
 
@@ -74,7 +83,8 @@ def test_quantity_must_be_positive():
             symbol="AAPL",
             quantity=0,
             side="BUY",
-            price=150
+            price=150,
+            timestamp="2026-01-05"
         )
 
 
@@ -87,7 +97,8 @@ def test_side_must_be_valid():
             symbol="AAPL",
             quantity=100,
             side="HOLD",
-            price=150
+            price=150,
+            timestamp="2026-01-05"
         )
 
 
@@ -97,7 +108,8 @@ def test_price_must_be_numeric():
             symbol="AAPL",
             quantity=100,
             side="BUY",
-            price="150"
+            price="150",
+            timestamp="2026-01-05"
         )
 
 
@@ -107,7 +119,8 @@ def test_price_must_be_positive():
             symbol="AAPL",
             quantity=100,
             side="BUY",
-            price=0
+            price=0,
+            timestamp="2026-01-05"
         )
 
 
@@ -116,7 +129,19 @@ def test_integer_price_is_stored_as_float():
         symbol="AAPL",
         quantity=100,
         side="BUY",
-        price=150
+        price=150,
+        timestamp="2026-01-05"
     )
 
     assert isinstance(fill.price, float)
+    
+def test_fill_timestamp_conversion():
+    fill = Fill(symbol="AAPL", quantity=10, side="BUY", price=100, timestamp="2026-01-05" )
+    
+    assert isinstance(fill.timestamp, pd.Timestamp)
+    
+def test_fill_invalid_timestamp():
+    with pytest.raises(ValueError):
+        Fill(symbol="AAPL", quantity=10, side="BUY", price=100, timestamp="not-a-date")
+        
+        

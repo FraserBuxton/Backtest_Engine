@@ -5,7 +5,7 @@ from Execution.order import Order
 class ExecutionEngine:
     # Converts Orders into Fills
     
-    def execute(self, order, price):
+    def execute(self, order, price, timestamp):
         
         # Check than an Order was supplied
         if not isinstance(order, Order):
@@ -19,4 +19,4 @@ class ExecutionEngine:
         if price <= 0:
             raise ValueError('price must be strictly positive')
         
-        return Fill(order.symbol,order.quantity, order.side, price)
+        return Fill(order.symbol,order.quantity, order.side, price, timestamp)

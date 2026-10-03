@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+
 from Engine.backtest import BacktestEngine
 from Strategy.strategy import MovingAverageStrategy
 
@@ -59,7 +60,7 @@ def create_test_data():
     )
 
 
-class TestDataHandler:
+class DummyDataHandler:
 
     def __init__(self, data):
         self.data = data
@@ -71,7 +72,7 @@ class TestDataHandler:
 def test_backtest_initialises():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -94,7 +95,7 @@ def test_backtest_initialises():
 def test_quantity_must_be_positive():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -117,7 +118,7 @@ def test_quantity_must_be_positive():
 def test_backtest_returns_dataframe():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -140,7 +141,7 @@ def test_backtest_returns_dataframe():
 def test_backtest_results_have_expected_columns():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -168,7 +169,7 @@ def test_backtest_results_have_expected_columns():
 def test_backtest_results_have_expected_length():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -185,15 +186,13 @@ def test_backtest_results_have_expected_length():
 
     results = engine.run()
 
-    # Last day cannot generate a trade for the
-    # following day because there is no following day.
     assert len(results) == len(data) - 1
 
 
 def test_backtest_preserves_chronological_order():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -216,7 +215,7 @@ def test_backtest_preserves_chronological_order():
 def test_backtest_does_not_use_future_data():
 
     data = create_test_data()
-    data_handler = TestDataHandler(data)
+    data_handler = DummyDataHandler(data)
 
     strategy = MovingAverageStrategy(
         short_window=2,
@@ -237,7 +236,7 @@ def test_backtest_does_not_use_future_data():
     modified_data = data.copy()
     modified_data.iloc[-1, modified_data.columns.get_loc("Close")] = 10_000
 
-    modified_handler = TestDataHandler(modified_data)
+    modified_handler = DummyDataHandler(modified_data)
 
     engine_2 = BacktestEngine(
         data_handler=modified_handler,
@@ -252,8 +251,102 @@ def test_backtest_does_not_use_future_data():
 
     results_2 = engine_2.run()
 
-    # Earlier results should not depend on the final
-    # observation that was not yet available.
     assert results_1.iloc[:-1]["Signal"].equals(
         results_2.iloc[:-1]["Signal"]
     )
+    
+def test_backtest_fill_has_timestamp():
+
+    data = create_test_data()
+    data_handler = DummyDataHandler(data)
+
+    engine = BacktestEngine(
+        data_handler=data_handler,
+        strategy=MovingAverageStrategy(
+            short_window=2,
+            long_window=3
+        ),
+        initial_cash=10_000,
+        symbol="AAPL",
+        quantity=10
+    )
+
+    engine.run()
+
+    for fill in engine.fills:
+        assert isinstance(fill.timestamp, pd.Timestamp)
+
+
+def test_backtest_fill_timestamp_is_execution_date():
+
+    data = create_test_data()
+    data_handler = DummyDataHandler(data)
+
+    engine = BacktestEngine(
+        data_handler=data_handler,
+        strategy=MovingAverageStrategy(
+            short_window=2,
+            long_window=3
+        ),
+        initial_cash=10_000,
+        symbol="AAPL",
+        quantity=10
+    )
+
+    engine.run()
+
+    for fill in engine.fills:
+        assert fill.timestamp in data.index
+
+
+def test_backtest_fill_executes_on_next_day():
+
+    data = create_test_data()
+    data_handler = DummyDataHandler(data)
+
+    engine = BacktestEngine(
+        data_handler=data_handler,
+        strategy=MovingAverageStrategy(
+            short_window=2,
+            long_window=3
+        ),
+        initial_cash=10_000,
+        symbol="AAPL",
+        quantity=10
+    )
+
+    engine.run()
+
+    for fill in engine.fills:
+
+        execution_date = fill.timestamp
+        execution_index = data.index.get_loc(execution_date)
+
+        assert execution_index > 0
+
+
+def test_backtest_fill_price_matches_execution_date_open():
+
+    data = create_test_data()
+    data_handler = DummyDataHandler(data)
+
+    engine = BacktestEngine(
+        data_handler=data_handler,
+        strategy=MovingAverageStrategy(
+            short_window=2,
+            long_window=3
+        ),
+        initial_cash=10_000,
+        symbol="AAPL",
+        quantity=10
+    )
+
+    engine.run()
+
+    for fill in engine.fills:
+
+        expected_price = float(
+            data.loc[fill.timestamp, "Open"]
+        )
+
+        assert fill.price == expected_price

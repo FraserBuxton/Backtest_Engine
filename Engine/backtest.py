@@ -24,7 +24,7 @@ class BacktestEngine:
     def run(self):
         data = self.data_handler.get_all()
         results = []
-        
+        self.fills = []
         
         for i in range(len(data) - 1):
             # current_date = data.index[i]
@@ -54,9 +54,10 @@ class BacktestEngine:
                 
                 execution_price = float(data.iloc[i+1]['Open'])
                 
-                fill = self.execution_engine.execute(order, execution_price)
+                fill = self.execution_engine.execute(order, execution_price, next_date)
 
                 self.portfolio.apply_fill(fill)
+                self.fills.append(fill)
                 
             prices = {self.symbol: data.iloc[i+1]['Close']}
             

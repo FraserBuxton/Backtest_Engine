@@ -1,12 +1,14 @@
+import pandas as pd
 
 
 class Fill:
     
-    def __init__(self, symbol, quantity, side, price):
+    def __init__(self, symbol, quantity, side, price, timestamp):
         self.symbol = symbol
         self.quantity = quantity
         self.side = side
         self.price = price
+        self.timestamp = timestamp
             
         self.__post_init__()
         
@@ -46,3 +48,10 @@ class Fill:
             raise ValueError('Price must be strictly positive')
         
         self.price = float(self.price)
+        
+        try:
+            self.timestamp = pd.Timestamp(self.timestamp)
+        except (ValueError, TypeError) as e:
+            raise ValueError(f'Invalid timestamp: {self.timestamp}') from e
+        
+        
