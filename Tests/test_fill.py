@@ -120,4 +120,30 @@ def test_fill_invalid_timestamp():
             timestamp="not-a-date",
             commission=0.0)
         
+def test_commission_must_be_numeric():
+    with pytest.raises(
+        TypeError,
+        match="Commission must be a number"
+    ):
+        Fill(
+            symbol="AAPL",
+            quantity=100,
+            price=150,
+            timestamp="2026-01-05",
+            commission="10"
+        )
+
+
+def test_commission_must_be_non_negative():
+    with pytest.raises(
+        ValueError,
+        match="Commission must be non-negative"
+    ):
+        Fill(
+            symbol="AAPL",
+            quantity=100,
+            price=150,
+            timestamp="2026-01-05",
+            commission=-10
+        )        
         

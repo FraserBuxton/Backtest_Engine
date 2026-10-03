@@ -1,5 +1,6 @@
 
 import pytest
+
 from Execution.order import Order
 
 
@@ -100,4 +101,15 @@ def test_side_must_be_valid():
             symbol="AAPL",
             quantity=100,
             side="HOLD"
+        )
+        
+def test_quantity_cannot_be_negative():
+    with pytest.raises(
+        ValueError,
+        match="quantity must be strictly positive"
+    ):
+        Order(
+            symbol="AAPL",
+            quantity=-100,
+            side="BUY"
         )

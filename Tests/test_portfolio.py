@@ -340,3 +340,44 @@ def test_apply_fill_requires_fill():
         match="fill must be a Fill"
     ):
         portfolio.apply_fill("not a fill")
+        
+def test_buy_commission_reduces_cash():
+    portfolio = Portfolio(10_000)
+
+    fill = Fill(
+        symbol="AAPL",
+        quantity=50,
+        price=100,
+        timestamp="2026-01-05",
+        commission=10.0
+    )
+
+    portfolio.apply_fill(fill)
+
+    assert portfolio.cash == 4_990
+    
+def test_sell_commission_reduces_cash():
+    portfolio = Portfolio(10_000)
+
+    buy = Fill(
+        symbol="AAPL",
+        quantity=50,
+        price=100,
+        timestamp="2026-01-05",
+        commission=0.0
+    )
+
+    sell = Fill(
+        symbol="AAPL",
+        quantity=-50,
+        price=120,
+        timestamp="2026-01-05",
+        commission=10.0
+    )
+
+    portfolio.apply_fill(buy)
+    portfolio.apply_fill(sell)
+
+    assert portfolio.cash == 10_990
+    
+    
