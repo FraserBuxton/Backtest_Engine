@@ -46,7 +46,6 @@ def test_buy_fill_updates_position():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -63,7 +62,6 @@ def test_buy_fill_reduces_cash():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -80,7 +78,6 @@ def test_cannot_buy_without_enough_cash():
     fill = Fill(
         symbol="AAPL",
         quantity=20,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -99,7 +96,6 @@ def test_position_value():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -119,7 +115,6 @@ def test_equity_after_buy():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -140,7 +135,6 @@ def test_equity_increases_when_price_rises():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -161,7 +155,6 @@ def test_unrealised_pnl():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -183,7 +176,6 @@ def test_unrealised_pnl_can_be_negative():
     fill = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -205,15 +197,13 @@ def test_sell_fill_increases_cash():
     buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
 
     sell = Fill(
         symbol="AAPL",
-        quantity=50,
-        side="SELL",
+        quantity=-50,
         price=120,
         timestamp='2026-01-05'
     )
@@ -231,15 +221,13 @@ def test_sell_fill_removes_position():
     buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
 
     sell = Fill(
         symbol="AAPL",
-        quantity=50,
-        side="SELL",
+        quantity=-50,
         price=120,
         timestamp='2026-01-05'
     )
@@ -257,15 +245,13 @@ def test_selling_creates_realised_pnl():
     buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
 
     sell = Fill(
         symbol="AAPL",
-        quantity=50,
-        side="SELL",
+        quantity=-50,
         price=120,
         timestamp='2026-01-05'
     )
@@ -283,15 +269,13 @@ def test_cannot_sell_more_than_position():
     buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
 
     sell = Fill(
         symbol="AAPL",
-        quantity=51,
-        side="SELL",
+        quantity=-51,
         price=100,
         timestamp='2026-01-05'
     )
@@ -312,7 +296,6 @@ def test_average_entry_price_after_multiple_buys():
     first_buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=100,
         timestamp='2026-01-05'
     )
@@ -320,7 +303,6 @@ def test_average_entry_price_after_multiple_buys():
     second_buy = Fill(
         symbol="AAPL",
         quantity=50,
-        side="BUY",
         price=120,
         timestamp='2026-01-05'
     )

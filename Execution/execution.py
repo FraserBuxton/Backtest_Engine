@@ -19,4 +19,12 @@ class ExecutionEngine:
         if price <= 0:
             raise ValueError('price must be strictly positive')
         
-        return Fill(order.symbol,order.quantity, order.side, price, timestamp)
+        # Fill Quantity
+        if order.side == 'BUY':
+            fill_quantity = order.quantity
+        elif order.side == 'SELL':
+            fill_quantity = -order.quantity
+        else:
+            raise ValueError('Invalid order side')
+        
+        return Fill(order.symbol, fill_quantity, price, timestamp)

@@ -3,10 +3,9 @@ import pandas as pd
 
 class Fill:
     
-    def __init__(self, symbol, quantity, side, price, timestamp):
+    def __init__(self, symbol, quantity, price, timestamp):
         self.symbol = symbol
         self.quantity = quantity
-        self.side = side
         self.price = price
         self.timestamp = timestamp
             
@@ -25,19 +24,6 @@ class Fill:
         # Integer quantity
         if not isinstance(self.quantity, int):
             raise TypeError('Quantity must be an integer')
-        
-        # Positive quantity
-        if self.quantity <= 0:
-            raise ValueError('Quantity must be strictly positive')
-        
-        # String side
-        if not isinstance(self.side, str):
-            raise TypeError('Side must be a string')
-        
-        # Buy or sell side
-        self.side = self.side.upper()
-        if self.side not in ['BUY', 'SELL']:
-            raise ValueError('Side must be either BUY or SELL')
         
         # Numeric price
         if not isinstance(self.price, (int, float)):

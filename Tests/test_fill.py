@@ -8,14 +8,12 @@ def test_valid_buy_fill():
     fill = Fill(
         symbol="AAPL",
         quantity=100,
-        side="BUY",
         price=150,
         timestamp="2026-01-05"
     )
 
     assert fill.symbol == "AAPL"
     assert fill.quantity == 100
-    assert fill.side == "BUY"
     assert fill.price == 150.0
     assert fill.timestamp == pd.Timestamp('2026-01-05')
 
@@ -23,25 +21,14 @@ def test_valid_buy_fill():
 def test_valid_sell_fill():
     fill = Fill(
         symbol="AAPL",
-        quantity=100,
-        side="SELL",
+        quantity=-100,
         price=150,
         timestamp="2026-01-05"
     )
-
-    assert fill.side == "SELL"
-
-
-def test_side_is_converted_to_uppercase():
-    fill = Fill(
-        symbol="AAPL",
-        quantity=100,
-        side="buy",
-        price=150,
-        timestamp="2026-01-05"
-    )
-
-    assert fill.side == "BUY"
+    assert fill.symbol == "AAPL"
+    assert fill.quantity == -100
+    assert fill.price == 150.0
+    assert fill.timestamp == pd.Timestamp('2026-01-05')
 
 
 def test_symbol_must_be_string():
@@ -49,7 +36,6 @@ def test_symbol_must_be_string():
         Fill(
             symbol=123,
             quantity=100,
-            side="BUY",
             price=150,
             timestamp="2026-01-05"
         )
@@ -60,7 +46,6 @@ def test_symbol_cannot_be_empty():
         Fill(
             symbol="",
             quantity=100,
-            side="BUY",
             price=150,
             timestamp="2026-01-05"
         )
@@ -71,32 +56,6 @@ def test_quantity_must_be_integer():
         Fill(
             symbol="AAPL",
             quantity=100.5,
-            side="BUY",
-            price=150,
-            timestamp="2026-01-05"
-        )
-
-
-def test_quantity_must_be_positive():
-    with pytest.raises(ValueError, match="Quantity must be strictly positive"):
-        Fill(
-            symbol="AAPL",
-            quantity=0,
-            side="BUY",
-            price=150,
-            timestamp="2026-01-05"
-        )
-
-
-def test_side_must_be_valid():
-    with pytest.raises(
-        ValueError,
-        match="Side must be either BUY or SELL"
-    ):
-        Fill(
-            symbol="AAPL",
-            quantity=100,
-            side="HOLD",
             price=150,
             timestamp="2026-01-05"
         )
@@ -107,7 +66,6 @@ def test_price_must_be_numeric():
         Fill(
             symbol="AAPL",
             quantity=100,
-            side="BUY",
             price="150",
             timestamp="2026-01-05"
         )
@@ -118,7 +76,6 @@ def test_price_must_be_positive():
         Fill(
             symbol="AAPL",
             quantity=100,
-            side="BUY",
             price=0,
             timestamp="2026-01-05"
         )
@@ -128,7 +85,6 @@ def test_integer_price_is_stored_as_float():
     fill = Fill(
         symbol="AAPL",
         quantity=100,
-        side="BUY",
         price=150,
         timestamp="2026-01-05"
     )
@@ -136,12 +92,20 @@ def test_integer_price_is_stored_as_float():
     assert isinstance(fill.price, float)
     
 def test_fill_timestamp_conversion():
-    fill = Fill(symbol="AAPL", quantity=10, side="BUY", price=100, timestamp="2026-01-05" )
+    fill = Fill(
+        symbol="AAPL",
+        quantity=10,
+        price=100,
+        timestamp="2026-01-05" )
     
     assert isinstance(fill.timestamp, pd.Timestamp)
     
 def test_fill_invalid_timestamp():
     with pytest.raises(ValueError):
-        Fill(symbol="AAPL", quantity=10, side="BUY", price=100, timestamp="not-a-date")
+        Fill(
+            symbol="AAPL",
+            quantity=10,
+            price=100,
+            timestamp="not-a-date")
         
         

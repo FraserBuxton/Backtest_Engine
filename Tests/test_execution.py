@@ -27,7 +27,6 @@ def test_buy_order_creates_fill():
     assert isinstance(fill, Fill)
     assert fill.symbol == "AAPL"
     assert fill.quantity == 100
-    assert fill.side == "BUY"
     assert fill.price == 150.0
     assert fill.timestamp == pd.Timestamp('2026-01-05')
 
@@ -45,8 +44,7 @@ def test_sell_order_creates_fill():
 
     assert isinstance(fill, Fill)
     assert fill.symbol == "AAPL"
-    assert fill.quantity == 50
-    assert fill.side == "SELL"
+    assert fill.quantity == -50
     assert fill.price == 150.0
     assert fill.timestamp == pd.Timestamp('2026-01-05')
 

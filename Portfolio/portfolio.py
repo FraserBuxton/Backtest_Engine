@@ -70,7 +70,7 @@ class Portfolio:
         
         current_position = self.get_position(symbol)
         
-        if fill.side == 'BUY':
+        if quantity > 0:
             cost = quantity * price
             
             # Cannot afford
@@ -89,19 +89,20 @@ class Portfolio:
             self.positions[symbol] = current_position + quantity
             self.average_entry_price[symbol] = new_average_price
             
-        elif fill.side == 'SELL':
+        elif quantity < 0:
+            sell_quantity = quantity * -1
             
             # Cannot sell more than held
-            if quantity > current_position:
+            if sell_quantity > current_position:
                 raise ValueError('Cannot sell more shares than currently held')
             
             entry_price = self.average_entry_price[symbol]
-            proceeds = quantity * price
-            realised = quantity * (price - entry_price)
+            proceeds = sell_quantity * price
+            realised = sell_quantity * (price - entry_price)
             
             self.cash += proceeds
             self.realised_pnl += realised
-            new_position = current_position - quantity
+            new_position = current_position - sell_quantity
             
             if new_position == 0:
                 self.positions.pop(symbol, None)
@@ -110,7 +111,7 @@ class Portfolio:
                 self.positions[symbol] = new_position
                 
         else:
-            raise ValueError(f'Unsupported fill side: {fill}')
+            raise ValueError('Fill quantity cannot be zero')
         
     
     
