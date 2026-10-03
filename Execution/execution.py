@@ -22,8 +22,6 @@ class ExecutionEngine:
         if price <= 0:
             raise ValueError('price must be strictly positive')
         
-        execution_price = self.slippage_model.get_execution_price(price, order.quantity)
-        commission = self.commission_model.calculate(execution_price, order.quantity)
         
         # Fill Quantity
         if order.side == 'BUY':
@@ -32,5 +30,8 @@ class ExecutionEngine:
             fill_quantity = -order.quantity
         else:
             raise ValueError('Invalid order side')
+        
+        execution_price = self.slippage_model.get_execution_price(price, fill_quantity)
+        commission = self.commission_model.calculate(execution_price, fill_quantity)
         
         return Fill(order.symbol, fill_quantity, execution_price, timestamp, commission)
