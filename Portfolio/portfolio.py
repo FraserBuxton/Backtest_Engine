@@ -86,6 +86,7 @@ class Portfolio:
                 new_average_price = (old_cost + new_cost) / (current_position + quantity)
                 
             self.cash -= cost
+            self.cash -= fill.commission
             self.positions[symbol] = current_position + quantity
             self.average_entry_price[symbol] = new_average_price
             
@@ -101,6 +102,7 @@ class Portfolio:
             realised = sell_quantity * (price - entry_price)
             
             self.cash += proceeds
+            self.cash -= fill.commission
             self.realised_pnl += realised
             new_position = current_position - sell_quantity
             

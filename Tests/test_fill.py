@@ -9,13 +9,15 @@ def test_valid_buy_fill():
         symbol="AAPL",
         quantity=100,
         price=150,
-        timestamp="2026-01-05"
+        timestamp="2026-01-05",
+        commission=0.0
     )
 
     assert fill.symbol == "AAPL"
     assert fill.quantity == 100
     assert fill.price == 150.0
     assert fill.timestamp == pd.Timestamp('2026-01-05')
+    assert fill.commission == 0.0
 
 
 def test_valid_sell_fill():
@@ -23,12 +25,14 @@ def test_valid_sell_fill():
         symbol="AAPL",
         quantity=-100,
         price=150,
-        timestamp="2026-01-05"
+        timestamp="2026-01-05",
+        commission=0.0
     )
     assert fill.symbol == "AAPL"
     assert fill.quantity == -100
     assert fill.price == 150.0
     assert fill.timestamp == pd.Timestamp('2026-01-05')
+    assert fill.commission == 0.0
 
 
 def test_symbol_must_be_string():
@@ -37,7 +41,8 @@ def test_symbol_must_be_string():
             symbol=123,
             quantity=100,
             price=150,
-            timestamp="2026-01-05"
+            timestamp="2026-01-05",
+            commission=0.0
         )
 
 
@@ -47,7 +52,8 @@ def test_symbol_cannot_be_empty():
             symbol="",
             quantity=100,
             price=150,
-            timestamp="2026-01-05"
+            timestamp="2026-01-05",
+            commission=0.0
         )
 
 
@@ -57,7 +63,8 @@ def test_quantity_must_be_integer():
             symbol="AAPL",
             quantity=100.5,
             price=150,
-            timestamp="2026-01-05"
+            timestamp="2026-01-05",
+            commission=0.0
         )
 
 
@@ -67,7 +74,8 @@ def test_price_must_be_numeric():
             symbol="AAPL",
             quantity=100,
             price="150",
-            timestamp="2026-01-05"
+            timestamp="2026-01-05",
+            commission=0.0
         )
 
 
@@ -77,7 +85,8 @@ def test_price_must_be_positive():
             symbol="AAPL",
             quantity=100,
             price=0,
-            timestamp="2026-01-05"
+            timestamp="2026-01-05",
+            commission=0.0
         )
 
 
@@ -86,7 +95,8 @@ def test_integer_price_is_stored_as_float():
         symbol="AAPL",
         quantity=100,
         price=150,
-        timestamp="2026-01-05"
+        timestamp="2026-01-05",
+        commission=0.0
     )
 
     assert isinstance(fill.price, float)
@@ -96,7 +106,8 @@ def test_fill_timestamp_conversion():
         symbol="AAPL",
         quantity=10,
         price=100,
-        timestamp="2026-01-05" )
+        timestamp="2026-01-05",
+        commission=0.0)
     
     assert isinstance(fill.timestamp, pd.Timestamp)
     
@@ -106,6 +117,7 @@ def test_fill_invalid_timestamp():
             symbol="AAPL",
             quantity=10,
             price=100,
-            timestamp="not-a-date")
+            timestamp="not-a-date",
+            commission=0.0)
         
         

@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 from Engine.backtest import BacktestEngine
+from Execution.commission import NoCommission
+from Execution.slippage import NoSlippage
 from Strategy.strategy import MovingAverageStrategy
 
 
@@ -84,7 +86,9 @@ def test_backtest_initialises():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     assert engine.symbol == "AAPL"
@@ -111,7 +115,9 @@ def test_quantity_must_be_positive():
             strategy=strategy,
             initial_cash=10_000,
             symbol="AAPL",
-            quantity=0
+            quantity=0,
+            slippage_model=NoSlippage(),
+            commission_model=NoCommission()
         )
 
 
@@ -130,7 +136,9 @@ def test_backtest_returns_dataframe():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results = engine.run()
@@ -153,7 +161,9 @@ def test_backtest_results_have_expected_columns():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results = engine.run()
@@ -181,7 +191,9 @@ def test_backtest_results_have_expected_length():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results = engine.run()
@@ -204,7 +216,9 @@ def test_backtest_preserves_chronological_order():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results = engine.run()
@@ -227,7 +241,9 @@ def test_backtest_does_not_use_future_data():
         strategy=strategy,
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results_1 = engine.run()
@@ -246,7 +262,9 @@ def test_backtest_does_not_use_future_data():
         ),
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     results_2 = engine_2.run()
@@ -268,7 +286,9 @@ def test_backtest_fill_has_timestamp():
         ),
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     engine.run()
@@ -290,7 +310,9 @@ def test_backtest_fill_timestamp_is_execution_date():
         ),
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     engine.run()
@@ -312,7 +334,9 @@ def test_backtest_fill_executes_on_next_day():
         ),
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     engine.run()
@@ -338,7 +362,9 @@ def test_backtest_fill_price_matches_execution_date_open():
         ),
         initial_cash=10_000,
         symbol="AAPL",
-        quantity=10
+        quantity=10,
+        slippage_model=NoSlippage(),
+        commission_model=NoCommission()
     )
 
     engine.run()

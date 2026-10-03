@@ -7,7 +7,7 @@ from Portfolio.portfolio import Portfolio
 
 class BacktestEngine:
     
-    def __init__(self, data_handler, strategy, initial_cash, symbol, quantity):
+    def __init__(self, data_handler, strategy, initial_cash, symbol, quantity, slippage_model, commission_model):
         
         # Positive quantity
         if quantity <= 0:
@@ -15,7 +15,7 @@ class BacktestEngine:
         
         self.data_handler = data_handler
         self.strategy = strategy
-        self.execution_engine = ExecutionEngine()
+        self.execution_engine = ExecutionEngine(slippage_model, commission_model)
         self.portfolio = Portfolio(initial_cash)
         self.symbol = symbol
         self.quantity = quantity

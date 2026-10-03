@@ -3,11 +3,12 @@ import pandas as pd
 
 class Fill:
     
-    def __init__(self, symbol, quantity, price, timestamp):
+    def __init__(self, symbol, quantity, price, timestamp, commission):
         self.symbol = symbol
         self.quantity = quantity
         self.price = price
         self.timestamp = timestamp
+        self.commission = commission
             
         self.__post_init__()
         
@@ -35,9 +36,19 @@ class Fill:
         
         self.price = float(self.price)
         
+        # Timestamp Check
         try:
             self.timestamp = pd.Timestamp(self.timestamp)
         except (ValueError, TypeError) as e:
             raise ValueError(f'Invalid timestamp: {self.timestamp}') from e
+        
+        # Numeric price
+        if not isinstance(self.commission, (int, float)):
+            raise TypeError('Commission must be a number')
+                
+        # Positive price
+        if self.commission < 0:
+            raise ValueError('Commission must be non-negative')
+        
         
         
