@@ -50,5 +50,7 @@ class Fill:
         if self.commission < 0:
             raise ValueError('Commission must be non-negative')
         
+        self.commission = float(self.commission)
+        
         
         
