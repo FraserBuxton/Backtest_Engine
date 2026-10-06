@@ -75,6 +75,9 @@ class PerformanceAnalyser:
         
         volatility = excess.std()
         
+        if volatility == 0 or np.isnan(volatility):
+            return 0.0
+        
         return excess.mean() / volatility * np.sqrt(self.ppy)
         
     def cumulative_returns(self):
