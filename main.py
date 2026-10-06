@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 
-from Data.data_handler import DataHandler
-from Engine.backtest import BacktestEngine
-from Execution.commission import PercentageCommission
-from Execution.slippage import PercentageSlippage
-from Strategy.strategy import MovingAverageStrategy
+from Data import DataHandler
+from Engine import BacktestEngine
+from Execution import PercentageCommission, PercentageSlippage
+from Performance import PerformanceAnalyser
+from Strategy import MovingAverageStrategy
 
 # Load Market Data
 data_handler = DataHandler('AAPL.csv')
@@ -38,3 +38,8 @@ plt.xlabel("Date")
 plt.ylabel("Portfolio Equity")
 
 plt.show()
+
+# Perfromance Metrics
+analyser = PerformanceAnalyser(results, 10000, 252)
+
+print(analyser.summary())
