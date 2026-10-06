@@ -42,18 +42,16 @@ class PerformanceAnalyser:
     
     @property
     def returns(self):
-        return self.equity.pct_change().dropna()
+        ret = self.equity.pct_change()
+        ret.iloc[0] = self.equity.iloc[0] / self.initial_cash - 1
+        return ret
     
     def total_return(self):
         return self.equity.iloc[-1] / self.initial_cash - 1
     
     def annualised_return(self):
         final_equity = self.equity.iloc[-1]
-        
-        if len(self.equity) < 2:
-            return 0.0
-        
-        periods = len(self.equity) - 1
+        periods = len(self.equity)
         
         return (final_equity / self.initial_cash) ** (self.ppy / periods) - 1
     
@@ -85,7 +83,7 @@ class PerformanceAnalyser:
     
     def drawdowns(self):
         
-        running_max = self.equity.cummax()
+        running_max = np.maximum(self.equity.cummax(), self.initial_cash)
         
         return self.equity / running_max - 1
     

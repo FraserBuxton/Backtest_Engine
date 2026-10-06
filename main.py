@@ -27,8 +27,8 @@ print(results)
 
 # Display Final Portfolio State
 print(f'\nFinal Cash: {engine.portfolio.cash}')
-print(f'Final Position: {engine.portfolio.get_position('AAPL')}')
-print(f'Final Equity: {results['Equity'].iloc[-1]}')
+print(f'Final Position: {engine.portfolio.get_position("AAPL")}')
+print(f'Final Equity: {results["Equity"].iloc[-1]}')
 
 # Equity Curve
 results["Equity"].plot()

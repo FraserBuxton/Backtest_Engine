@@ -25,9 +25,9 @@ class BacktestEngine:
         data = self.data_handler.get_all()
         results = []
         self.fills = []
+        self.rejected_orders = []
         
         for i in range(len(data) - 1):
-            # current_date = data.index[i]
             next_date = data.index[i+1]
             
             # Data available at current close
@@ -56,8 +56,11 @@ class BacktestEngine:
                 
                 fill = self.execution_engine.execute(order, execution_price, next_date)
 
-                self.portfolio.apply_fill(fill)
-                self.fills.append(fill)
+                if self.portfolio.can_afford(fill):
+                    self.portfolio.apply_fill(fill)
+                    self.fills.append(fill)
+                else:
+                    self.rejected_orders.append((next_date, order))
                 
             prices = {self.symbol: data.iloc[i+1]['Close']}
             

@@ -18,7 +18,7 @@ class Portfolio:
         self.positions = {}
         self.average_entry_price = {}
         self.realised_pnl = 0.0
-    
+            
     def get_position(self, symbol):
         return self.positions.get(symbol, 0)
     
@@ -55,6 +55,9 @@ class Portfolio:
             
         return equity
     
+    def can_afford(self, fill):
+        return fill.quantity <= 0 or fill.quantity * fill.price + fill.commission <= self.cash
+    
     def apply_fill(self, fill):
         
         if not isinstance(fill, Fill):
@@ -79,12 +82,10 @@ class Portfolio:
                 raise ValueError('Insufficient cash')
             
             if current_position == 0:
-                new_average_price = price
+                new_average_price = total_cost / quantity
             else:
                 old_cost = current_position * self.average_entry_price[symbol]
-                new_cost = quantity * price
-                
-                new_average_price = (old_cost + new_cost) / (current_position + quantity)
+                new_average_price = (old_cost + total_cost) / (current_position + quantity)
                 
             self.cash -= total_cost
             self.positions[symbol] = current_position + quantity
@@ -99,7 +100,7 @@ class Portfolio:
             
             entry_price = self.average_entry_price[symbol]
             proceeds = sell_quantity * price
-            realised = sell_quantity * (price - entry_price)
+            realised = sell_quantity * (price - entry_price) - fill.commission
             
             self.cash += proceeds
             self.cash -= fill.commission
