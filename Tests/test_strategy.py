@@ -847,3 +847,29 @@ def test_generate_all_contains_only_valid_signal_values():
     signals = strategy.generate_all(data)
 
     assert signals.isin([0, 1]).all()
+
+
+# ----------------------------------------------------------------------
+# Additional edge cases
+# ----------------------------------------------------------------------
+
+
+def test_generate_all_shorter_than_long_window_is_all_zero():
+    data = pd.DataFrame({"Close": [1.0, 2.0, 3.0]})
+    signals = MovingAverageStrategy(2, 5).generate_all(data)
+    assert len(signals) == 3
+    assert (signals == 0).all()
+
+
+def test_generate_signal_requires_close_column():
+    with pytest.raises(KeyError):
+        MovingAverageStrategy(2, 3).generate_signal(pd.DataFrame({"Open": [1.0] * 5}))
+
+
+def test_generate_all_requires_close_column():
+    with pytest.raises(KeyError):
+        MovingAverageStrategy(2, 3).generate_all(pd.DataFrame({"Open": [1.0] * 5}))
+
+def test_strategy_windows_reject_bool():
+    with pytest.raises(TypeError):
+        MovingAverageStrategy(True, 5)

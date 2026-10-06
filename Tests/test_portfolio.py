@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from Execution.fill import Fill
@@ -638,3 +640,122 @@ def test_negative_fill_price_rejected():
             quantity=50,
             price=-100
         )
+
+
+# ----------------------------------------------------------------------
+# Commission accounting, can_afford and cash boundaries
+# ----------------------------------------------------------------------
+
+
+def make_buy(price, quantity=1, commission=0.0):
+    return make_fill(quantity=quantity, price=price, timestamp="2020-01-01", commission=commission)
+
+
+def make_sell(price, quantity=1, commission=0.0):
+    return make_fill(quantity=-quantity, price=price, timestamp="2020-01-02", commission=commission)
+
+
+def test_apply_fill_rejects_price_corrupted_after_creation():
+    fill = make_buy(100.0)
+    fill.price = 0.0
+    with pytest.raises(ValueError, match="Price must be strictly positive"):
+        Portfolio(10000).apply_fill(fill)
+
+
+def test_can_afford_true_when_cost_equals_cash_exactly():
+    assert Portfolio(1000).can_afford(make_buy(100.0, quantity=10)) is True
+
+
+def test_can_afford_false_when_commission_pushes_cost_over_cash():
+    assert Portfolio(1000).can_afford(make_buy(100.0, quantity=10, commission=0.01)) is False
+
+
+def test_can_afford_false_when_price_exceeds_cash():
+    assert Portfolio(50).can_afford(make_buy(100.0)) is False
+
+
+def test_can_afford_always_true_for_sells():
+    portfolio = Portfolio(1)
+    assert portfolio.can_afford(make_sell(100.0, commission=5.0)) is True
+
+
+def test_buying_with_exactly_all_cash_leaves_zero_cash():
+    portfolio = Portfolio(1000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10))
+    assert portfolio.cash == pytest.approx(0.0)
+    assert portfolio.get_position("AAPL") == 10
+
+
+def test_buy_commission_is_included_in_average_entry_price():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10, commission=10.0))
+    assert portfolio.average_entry_price["AAPL"] == pytest.approx(101.0)
+
+
+def test_sell_commission_is_subtracted_from_realised_pnl():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10))
+    portfolio.apply_fill(make_sell(110.0, quantity=10, commission=5.0))
+    assert portfolio.realised_pnl == pytest.approx(95.0)
+
+
+def test_round_trip_realised_pnl_equals_cash_change():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10, commission=5.0))
+    portfolio.apply_fill(make_sell(110.0, quantity=10, commission=5.0))
+    assert portfolio.realised_pnl == pytest.approx(portfolio.cash - 10000)
+
+
+def test_partial_sell_realised_pnl_with_commission():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10, commission=10.0))  # avg entry 101
+    portfolio.apply_fill(make_sell(111.0, quantity=4, commission=2.0))
+    assert portfolio.realised_pnl == pytest.approx(4 * (111 - 101) - 2.0)
+    assert portfolio.average_entry_price["AAPL"] == pytest.approx(101.0)
+
+
+def test_unrealised_pnl_uses_fee_adjusted_entry_price():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=10, commission=10.0))
+    assert portfolio.get_unrealised_pnl("AAPL", 100.0) == pytest.approx(-10.0)
+
+
+def test_average_entry_price_cleared_when_position_closed():
+    portfolio = Portfolio(10000)
+    portfolio.apply_fill(make_buy(100.0, quantity=5))
+    portfolio.apply_fill(make_sell(105.0, quantity=5))
+    assert "AAPL" not in portfolio.average_entry_price
+    assert "AAPL" not in portfolio.positions
+
+# ----------------------------------------------------------------------
+# Accounting invariant (randomised)
+# ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("seed", range(20))
+def test_equity_identity_holds_for_random_trading(seed):
+    # equity == initial cash + realised P&L + unrealised P&L, always
+    rng = random.Random(seed)
+    initial = 100000.0
+    portfolio = Portfolio(initial)
+
+    for step in range(60):
+        price = round(rng.uniform(50, 150), 2)
+        commission = round(rng.uniform(0, 5), 2)
+        position = portfolio.get_position("AAPL")
+
+        if position == 0 or rng.random() < 0.5:
+            quantity = rng.randint(1, 20)
+            fill = make_fill(quantity=quantity, price=price, timestamp=f"2020-01-{step % 28 + 1:02d}", commission=commission)
+            if portfolio.can_afford(fill):
+                portfolio.apply_fill(fill)
+        else:
+            quantity = rng.randint(1, position)
+            portfolio.apply_fill(
+                make_fill(quantity=-quantity, price=price, timestamp=f"2020-01-{step % 28 + 1:02d}", commission=commission)
+            )
+
+        mark = round(rng.uniform(50, 150), 2)
+        equity = portfolio.get_equity({"AAPL": mark})
+        unrealised = portfolio.get_unrealised_pnl("AAPL", mark)
+        assert equity == pytest.approx(initial + portfolio.realised_pnl + unrealised)

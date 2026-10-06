@@ -19,9 +19,9 @@ class MovingAverageStrategy(Strategy):
     def __init__(self, short_window, long_window):
         
         # Must be integers
-        if not isinstance(short_window, int):
+        if not isinstance(short_window, int) or isinstance(short_window, bool):
             raise TypeError('short_window must be an integer')
-        if not isinstance(long_window, int):
+        if not isinstance(long_window, int) or isinstance(long_window, bool):
                     raise TypeError('long_window must be an integer')
                 
         # Must be positive

@@ -37,7 +37,7 @@ plt.title("AAPL Moving Average Strategy")
 plt.xlabel("Date")
 plt.ylabel("Portfolio Equity")
 
-plt.show()
+plt.savefig('Equity Curve.png')
 
 # Perfromance Metrics
 analyser = PerformanceAnalyser(results, 10000, 252)

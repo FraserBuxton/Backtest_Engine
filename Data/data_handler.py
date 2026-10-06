@@ -13,6 +13,12 @@ class DataHandler:
         self.data = self._load_data(filepath)
         self._validate_data()
         
+    def is_yf(self):
+        with open(self.filepath) as file:
+             lines = [file.readline().strip() for _ in range(3)]
+
+        return lines[1].startswith('Ticker') and lines[2].startswith('Date')
+    
     def _load_data(self, filepath):
         
         # Check that the file exists
@@ -24,9 +30,11 @@ class DataHandler:
             raise ValueError(f'Path is not a file: {self.filepath}')
         
         # Read file
+        skiprows = [1,2] if self.is_yf() else None
         try:
-            data = pd.read_csv(filepath, skiprows=[1,2])
-            data = data.rename(columns={'Price': 'Date'})
+            data = pd.read_csv(filepath, skiprows=skiprows)
+            if 'Date' not in data.columns:
+                data = data.rename(columns={'Price': 'Date'})
         except pd.errors.EmptyDataError:
             raise ValueError(f'Data file is empty: {self.filepath}')
         except pd.errors.ParserError as e:

@@ -644,3 +644,26 @@ def test_base_commission_model_raises_not_implemented():
             100.0,
             10
         )
+
+
+# ----------------------------------------------------------------------
+# Guard branches
+# ----------------------------------------------------------------------
+
+
+def test_execution_rejects_order_whose_side_was_changed_after_creation():
+    order = Order("AAPL", 1, "BUY")
+    order.side = "HOLD"
+    engine = ExecutionEngine(NoSlippage(), NoCommission())
+    with pytest.raises(ValueError, match="Invalid order side"):
+        engine.execute(order, 100.0, "2020-01-01")
+
+
+def test_execution_rejects_slippage_model_returning_non_positive_price():
+    class BrokenSlippage(SlippageModel):
+        def get_execution_price(self, market_price, quantity):
+            return 0.0
+
+    engine = ExecutionEngine(BrokenSlippage(), NoCommission())
+    with pytest.raises(ValueError):
+        engine.execute(Order("AAPL", 1, "BUY"), 100.0, "2020-01-01")

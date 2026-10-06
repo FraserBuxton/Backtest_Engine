@@ -1,10 +1,19 @@
+import runpy
+from itertools import pairwise
+from pathlib import Path
+
+import matplotlib
+import numpy as np
 import pandas as pd
 import pytest
 
+from Data import DataHandler
 from Engine.backtest import BacktestEngine
 from Execution.commission import NoCommission, PercentageCommission
+from Execution.order import Order
 from Execution.slippage import NoSlippage, PercentageSlippage
-from Strategy.strategy import MovingAverageStrategy
+from Performance import PerformanceAnalyser
+from Strategy.strategy import MovingAverageStrategy, Strategy
 
 
 def create_test_data():
@@ -529,3 +538,274 @@ def test_backtest_equity_equals_cash_plus_position_value():
         )
 
         assert row["Equity"] == pytest.approx(expected_equity)
+
+
+# ----------------------------------------------------------------------
+# Rejected orders and data-length edge cases
+# ----------------------------------------------------------------------
+
+
+def make_frame(opens):
+    index = pd.date_range("2020-01-01", periods=len(opens), freq="D")
+    return pd.DataFrame(
+        {
+            "Open": opens,
+            "High": [p + 1 for p in opens],
+            "Low": [p - 1 for p in opens],
+            "Close": opens,
+            "Volume": [1000] * len(opens),
+        },
+        index=index,
+    )
+
+
+class AlwaysLong(Strategy):
+    def generate_signal(self, data):
+        return 1
+
+
+def make_engine(opens, cash=10000, quantity=1, strategy=None):
+    return create_engine(
+        data=make_frame(opens),
+        strategy=strategy or AlwaysLong(),
+        initial_cash=cash,
+        quantity=quantity,
+    )
+
+
+def test_unaffordable_order_is_rejected_without_crashing():
+    engine = make_engine([100, 100, 100, 100], cash=50)
+    results = engine.run()
+    assert len(results) == 3
+    assert len(engine.fills) == 0
+    assert len(engine.rejected_orders) > 0
+    assert engine.portfolio.get_position("AAPL") == 0
+
+
+def test_rejected_order_is_recorded_with_date_and_order():
+    engine = make_engine([100, 100, 100], cash=50)
+    engine.run()
+    date, order = engine.rejected_orders[0]
+    assert date == pd.Timestamp("2020-01-02")
+    assert isinstance(order, Order)
+    assert order.side == "BUY"
+
+
+def test_rejected_buy_is_retried_while_signal_stays_long():
+    engine = make_engine([100, 100, 100, 100], cash=50)
+    engine.run()
+    assert len(engine.rejected_orders) == 3
+
+
+def test_cash_is_unchanged_when_every_order_is_rejected():
+    engine = make_engine([100, 100, 100], cash=50)
+    results = engine.run()
+    assert (results["Cash"] == 50).all()
+    assert (results["Equity"] == 50).all()
+
+
+def test_order_exactly_affordable_is_accepted():
+    engine = make_engine([100, 100, 100], cash=100)
+    engine.run()
+    assert len(engine.fills) == 1
+    assert len(engine.rejected_orders) == 0
+
+
+def test_rejected_orders_reset_at_start_of_run():
+    engine = make_engine([100, 100, 100], cash=50)
+    engine.run()
+    first = len(engine.rejected_orders)
+    engine.run()
+    assert len(engine.rejected_orders) == first
+
+
+def test_two_rows_produce_a_single_result_row():
+    results = make_engine([100, 101]).run()
+    assert len(results) == 1
+
+
+def test_final_equity_marks_open_position_to_last_close():
+    engine = make_engine([100, 100, 110, 120], cash=1000, quantity=2)
+    results = engine.run()
+    # Bought 2 at day-2 open (100); last close is 120
+    assert results["Equity"].iloc[-1] == pytest.approx(800 + 2 * 120)
+
+
+def test_last_bars_signal_is_never_traded():
+    # Signal flips on the final bar only; there is no next bar to fill on
+    class LastBarOnly(Strategy):
+        def generate_signal(self, data):
+            return 1 if len(data) == 4 else 0
+
+    engine = make_engine([100, 100, 100, 100], strategy=LastBarOnly())
+    engine.run()
+    assert len(engine.fills) == 0
+
+
+def test_results_signal_column_records_signal_at_prior_close():
+    class FromDay3(Strategy):
+        def generate_signal(self, data):
+            return 1 if len(data) >= 3 else 0
+
+    results = make_engine([100, 100, 100, 100, 100], strategy=FromDay3()).run()
+    assert list(results["Signal"]) == [0, 0, 1, 1]
+
+
+def test_signal_to_flat_does_nothing_when_already_flat():
+    class NeverLong(Strategy):
+        def generate_signal(self, data):
+            return 0
+
+    engine = make_engine([100, 101, 102, 103], strategy=NeverLong())
+    engine.run()
+    assert engine.fills == []
+    assert engine.rejected_orders == []
+
+# ----------------------------------------------------------------------
+# End-to-end: golden master, consistency checks and main.py
+# ----------------------------------------------------------------------
+
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA_FILE = ROOT / "AAPL.csv"
+
+
+@pytest.fixture(scope="module")
+def aapl_backtest():
+    data_handler = DataHandler(DATA_FILE)
+    engine = BacktestEngine(
+        data_handler,
+        MovingAverageStrategy(30, 50),
+        10000,
+        "AAPL",
+        10,
+        PercentageSlippage(0.0005),
+        PercentageCommission(0.0005),
+    )
+    results = engine.run()
+    return data_handler, engine, results
+
+
+# Golden master: if you change the engine, cost models or metrics ON PURPOSE,
+# re-run main.py and update these numbers.
+
+def test_golden_number_of_trades(aapl_backtest):
+    _, engine, results = aapl_backtest
+    assert len(results) == 1692
+    assert len(engine.fills) == 39
+    assert len(engine.rejected_orders) == 0
+
+
+def test_golden_first_trades(aapl_backtest):
+    _, engine, _ = aapl_backtest
+    first = [(str(f.timestamp.date()), f.quantity) for f in engine.fills[:4]]
+    assert first == [
+        ("2020-05-06", 10),
+        ("2020-10-13", -10),
+        ("2020-11-10", 10),
+        ("2021-03-09", -10),
+    ]
+
+
+def test_golden_final_portfolio(aapl_backtest):
+    _, engine, results = aapl_backtest
+    assert engine.portfolio.cash == pytest.approx(8400.679990444418)
+    assert engine.portfolio.get_position("AAPL") == 10
+    assert results["Equity"].iloc[-1] == pytest.approx(11784.679929409262)
+    assert engine.portfolio.realised_pnl == pytest.approx(1764.441316079099)
+
+
+def test_golden_performance_summary(aapl_backtest):
+    _, _, results = aapl_backtest
+    summary = PerformanceAnalyser(results, 10000, 252).summary()
+    assert summary["Total Return"] == pytest.approx(0.17846799294092608)
+    assert summary["Annualised Return"] == pytest.approx(0.024759135757033368)
+    assert summary["Annualised Volatility"] == pytest.approx(0.03489649457704256)
+    assert summary["Sharpe Ratio"] == pytest.approx(0.7183405454480423)
+    assert summary["Maximum Drawdown"] == pytest.approx(-0.057471563068234865)
+    assert summary["Calmar Ratio"] == pytest.approx(0.43080672310299495)
+
+
+def test_engine_signals_match_vectorised_signals(aapl_backtest):
+    data_handler, _, results = aapl_backtest
+    vectorised = MovingAverageStrategy(30, 50).generate_all(data_handler.get_all())
+    # Results row i is dated bar i+1 and records the signal from bar i's close
+    assert list(results["Signal"]) == list(vectorised.iloc[:-1])
+
+
+def test_position_follows_signal_with_one_bar_lag(aapl_backtest):
+    _, _, results = aapl_backtest
+    long_signal = results["Signal"] == 1
+    # Position is held whenever the previous bar's signal was long
+    # (costs are tiny relative to cash, so every order is affordable)
+    assert ((results["Position"] > 0) == long_signal).all()
+
+
+def test_fills_alternate_between_buys_and_sells(aapl_backtest):
+    _, engine, _ = aapl_backtest
+    signs = [np.sign(f.quantity) for f in engine.fills]
+    assert signs[0] == 1
+    assert all(a != b for a, b in pairwise(signs))
+
+
+def test_every_sell_closes_the_full_position(aapl_backtest):
+    _, engine, _ = aapl_backtest
+    assert all(abs(f.quantity) == 10 for f in engine.fills)
+
+
+def test_results_index_is_strictly_increasing(aapl_backtest):
+    _, _, results = aapl_backtest
+    assert results.index.is_monotonic_increasing
+    assert not results.index.has_duplicates
+
+
+def test_equity_is_cash_plus_position_value_every_day(aapl_backtest):
+    data_handler, _, results = aapl_backtest
+    closes = data_handler.get_all()["Close"].loc[results.index]
+    expected = results["Cash"] + results["Position"] * closes
+    assert np.allclose(results["Equity"], expected)
+
+
+def test_transaction_costs_reduce_final_equity():
+    data_handler = DataHandler(DATA_FILE)
+    strategy = MovingAverageStrategy(30, 50)
+
+    def run(rate):
+        engine = BacktestEngine(
+            data_handler,
+            strategy,
+            10000,
+            "AAPL",
+            10,
+            PercentageSlippage(rate),
+            PercentageCommission(rate),
+        )
+        return engine.run()["Equity"].iloc[-1]
+
+    assert run(0.0) > run(0.0005) > run(0.005)
+
+
+def test_main_script_runs_end_to_end(monkeypatch, capsys):
+    matplotlib.use("Agg")
+    monkeypatch.chdir(ROOT)
+    runpy.run_path(str(ROOT / "main.py"), run_name="__main__")
+    output = capsys.readouterr().out
+    assert "Final Equity" in output
+    assert "Sharpe Ratio" in output
+
+
+def test_run_twice_gives_identical_results():
+    engine = make_engine([100, 101, 102, 103, 104])
+    first = engine.run()
+    first_fills = len(engine.fills)
+    second = engine.run()
+    assert len(engine.fills) == first_fills
+    pd.testing.assert_frame_equal(first, second)
+
+def test_single_row_of_data_raises_clear_error():
+    with pytest.raises(ValueError, match="at least two"):
+        make_engine([100]).run()
+
+def test_float_quantity_rejected_at_construction():
+    with pytest.raises(TypeError):
+        make_engine([100, 101, 102], quantity=2.5)

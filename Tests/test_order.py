@@ -113,3 +113,18 @@ def test_quantity_cannot_be_negative():
             quantity=-100,
             side="BUY"
         )
+
+
+# ----------------------------------------------------------------------
+# Additional validation
+# ----------------------------------------------------------------------
+
+
+def test_order_side_must_be_a_string():
+    with pytest.raises(TypeError, match="Side must be a string"):
+        Order("AAPL", 1, 5)
+
+
+def test_order_rejects_bool_quantity():
+    with pytest.raises(TypeError):
+        Order("AAPL", True, "BUY")

@@ -19,7 +19,7 @@ class Order:
             raise ValueError('symbol cannot be empty')
         
         # Integer quantity
-        if not isinstance(self.quantity, int):
+        if not isinstance(self.quantity, int) or isinstance(self.quantity, bool):
             raise TypeError('quantity must be an integer')
         
         # Positive quantity

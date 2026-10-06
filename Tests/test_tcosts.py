@@ -422,3 +422,16 @@ def test_base_commission_model_raises_not_implemented():
             100.0,
             10
         )
+
+def test_slippage_rate_cannot_be_nan():
+    with pytest.raises(ValueError):
+        PercentageSlippage(float("nan"))
+
+def test_commission_rate_cannot_be_nan():
+    with pytest.raises(ValueError):
+        PercentageCommission(float("nan"))
+
+def test_slippage_rate_above_one_is_rejected():
+    # A 150% rate would sell a $100 share for -$50
+    with pytest.raises(ValueError):
+        PercentageSlippage(1.5)

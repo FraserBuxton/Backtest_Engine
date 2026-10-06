@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 
 
@@ -23,12 +25,15 @@ class Fill:
             raise ValueError('Symbol cannot be empty')
         
         # Integer quantity
-        if not isinstance(self.quantity, int):
+        if not isinstance(self.quantity, int) or isinstance(self.quantity, bool):
             raise TypeError('Quantity must be an integer')
         
         # Numeric price
         if not isinstance(self.price, (int, float)):
             raise TypeError('Price must be a number')
+        
+        if not math.isfinite(self.price):
+            raise ValueError('Price must be finite')
         
         # Positive price
         if self.price <= 0:
@@ -46,6 +51,9 @@ class Fill:
         if not isinstance(self.commission, (int, float)):
             raise TypeError('Commission must be a number')
                 
+        if not math.isfinite(self.commission):
+            raise ValueError('Commission must be finite')
+        
         # Positive price
         if self.commission < 0:
             raise ValueError('Commission must be non-negative')

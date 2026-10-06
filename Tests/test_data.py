@@ -12,6 +12,9 @@ VALID_DATA = """Price,Close,High,Low,Open,Volume
                 """
 
 
+CSV_HEADER = "Price,Close,High,Low,Open,Volume\nTicker,AAPL,AAPL,AAPL,AAPL,AAPL\nDate,,,,,\n"
+
+
 def create_csv(tmp_path, content=VALID_DATA):
     filepath = tmp_path / "test_data.csv"
     filepath.write_text(content)
@@ -370,3 +373,65 @@ def test_get_dates(tmp_path):
     assert len(dates) == 4
     assert dates[0] == pd.Timestamp("2020-01-02")
     assert dates[-1] == pd.Timestamp("2020-01-07")
+
+
+# ----------------------------------------------------------------------
+# Validation branches and index checks
+# ----------------------------------------------------------------------
+
+
+def test_malformed_csv_raises_value_error(tmp_path):
+    # An unterminated quote makes the CSV unparseable
+    content = CSV_HEADER + '"2020-01-02,75,76\n'
+    path = create_csv(tmp_path, content)
+    with pytest.raises(ValueError):
+        DataHandler(path)
+
+
+def test_csv_with_no_data_rows_is_rejected(tmp_path):
+    path = create_csv(tmp_path, "Price,Close,High,Low,Open,Volume\n")
+    with pytest.raises(ValueError, match="No data was loaded"):
+        DataHandler(path)
+
+
+def test_missing_date_column_is_rejected(tmp_path):
+    content = "Close,High,Low,Open,Volume\nAAPL,AAPL,AAPL,AAPL,AAPL\n,,,,\n75,76,74,75,1000\n76,77,75,75,1100\n"
+    with pytest.raises(ValueError, match="No date column"):
+        DataHandler(create_csv(tmp_path, content))
+
+
+def test_blank_date_is_rejected(tmp_path):
+    content = CSV_HEADER + "2020-01-02,75,76,74,75,1000\n,76,77,75,75,1100\n"
+    with pytest.raises(ValueError, match="Missing value in Date"):
+        DataHandler(create_csv(tmp_path, content))
+
+
+def test_get_between_rejects_invalid_start(tmp_path):
+    handler = DataHandler(create_csv(tmp_path, CSV_HEADER + "2020-01-02,75,76,74,75,1000\n"))
+    with pytest.raises(ValueError, match="Invalid start or end date"):
+        handler.get_between("not a date", "2020-01-03")
+
+
+def test_get_between_rejects_invalid_end(tmp_path):
+    handler = DataHandler(create_csv(tmp_path, CSV_HEADER + "2020-01-02,75,76,74,75,1000\n"))
+    with pytest.raises(ValueError, match="Invalid start or end date"):
+        handler.get_between("2020-01-02", "not a date")
+
+
+def test_get_dates_returns_all_dates_in_order(tmp_path):
+    content = CSV_HEADER + "2020-01-03,76,77,75,75,1100\n2020-01-02,75,76,74,75,1000\n"
+    handler = DataHandler(create_csv(tmp_path, content))
+    assert list(handler.get_dates()) == [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")]
+
+
+def test_loaded_index_is_datetime(tmp_path):
+    handler = DataHandler(create_csv(tmp_path, CSV_HEADER + "2020-01-02,75,76,74,75,1000\n"))
+    assert isinstance(handler.get_all().index, pd.DatetimeIndex)
+
+
+def test_plain_csv_loads_every_row(tmp_path):
+    rows = ["Date,Open,High,Low,Close,Volume"]
+    rows += [f"2020-01-0{i},10,11,9,10,100" for i in range(1, 6)]
+    path = tmp_path / "plain.csv"
+    path.write_text("\n".join(rows))
+    assert len(DataHandler(path).get_all()) == 5

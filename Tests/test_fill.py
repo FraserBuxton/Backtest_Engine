@@ -427,3 +427,22 @@ def test_buy_and_sell_fills_are_independent():
     assert sell_fill.quantity == -50
     assert sell_fill.price == 160.0
     assert sell_fill.commission == 6.0
+
+
+# ----------------------------------------------------------------------
+# Known bugs (expected failures until fixed)
+# ----------------------------------------------------------------------
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_fill_rejects_non_finite_price(bad):
+    with pytest.raises(ValueError):
+        Fill("AAPL", 1, bad, "2020-01-01", 0.0)
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_fill_rejects_non_finite_commission(bad):
+    with pytest.raises(ValueError):
+        Fill("AAPL", 1, 10.0, "2020-01-01", bad)
+
+def test_fill_rejects_bool_quantity():
+    with pytest.raises(TypeError):
+        Fill("AAPL", True, 10.0, "2020-01-01", 0.0)

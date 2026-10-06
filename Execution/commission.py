@@ -1,3 +1,4 @@
+import math
 
 
 class CommissionModel:
@@ -10,6 +11,9 @@ class NoCommission(CommissionModel):
     
 class PercentageCommission(CommissionModel):
     def __init__(self, rate):
+        if not math.isfinite(rate):
+            raise ValueError('Commission rate must be finite')
+        
         if rate < 0:
             raise ValueError('Commission rate must be non-negative')
         

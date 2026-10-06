@@ -9,6 +9,9 @@ class BacktestEngine:
     
     def __init__(self, data_handler, strategy, initial_cash, symbol, quantity, slippage_model, commission_model):
         
+        if not isinstance(quantity, int) or isinstance(quantity, bool):
+            raise TypeError('quantity must be an integer')
+        
         # Positive quantity
         if quantity <= 0:
             raise ValueError('quantity must be strictly positive')
@@ -16,6 +19,7 @@ class BacktestEngine:
         self.data_handler = data_handler
         self.strategy = strategy
         self.execution_engine = ExecutionEngine(slippage_model, commission_model)
+        self.initial_cash = initial_cash
         self.portfolio = Portfolio(initial_cash)
         self.symbol = symbol
         self.quantity = quantity
@@ -23,6 +27,11 @@ class BacktestEngine:
         
     def run(self):
         data = self.data_handler.get_all()
+        
+        if len(data) < 2:
+            raise ValueError('data must contain at least two lines')
+        
+        self.portfolio = Portfolio(self.initial_cash)
         results = []
         self.fills = []
         self.rejected_orders = []

@@ -1,3 +1,4 @@
+import math
 
 
 class SlippageModel:
@@ -11,8 +12,14 @@ class NoSlippage(SlippageModel):
     
 class PercentageSlippage(SlippageModel):
     def __init__(self, rate):
+        if not math.isfinite(rate):
+            raise ValueError('Slippage rate must be finite')
+        
         if rate < 0:
             raise ValueError('Slippage rate must be non-negative')
+        
+        if rate >= 1:
+            raise ValueError('Slippage rate must be less than 1')
         
         self.rate = rate
         

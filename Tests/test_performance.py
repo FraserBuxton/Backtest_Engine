@@ -7,6 +7,7 @@ from Performance import PerformanceAnalyser
 INITIAL = 10000
 PPY = 252
 
+
 def make(equity, initial=INITIAL, ppy=PPY):
     index = pd.date_range("2020-01-01", periods=len(equity), freq="B")
     results = pd.DataFrame({"Equity": equity}, index=index)
